@@ -1,10 +1,14 @@
 package smtp
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/smtp"
 	"strings"
+	"text/template"
+
+	"github.com/core-stack/authz/zmodel"
 )
 
 type SMTPConfig struct {
@@ -42,6 +46,20 @@ func (s *SMTPSender) Send(ctx context.Context, to, subject, body string) error {
 		msg.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
 	}
 	msg.WriteString("\r\n" + body)
-
 	return smtp.SendMail(addr, s.auth, s.cfg.From, []string{to}, []byte(msg.String()))
+}
+
+func (s *SMTPSender) SendActiveAccount(ctx context.Context, user zmodel.User, code string) error {
+	t, err := template.ParseFiles("")
+	if err != nil {
+		return err
+	}
+	buf := new(bytes.Buffer)
+	if err = t.Execute(buf, data); err != nil {
+		return err
+	}
+
+	// diretorio
+	// data
+
 }

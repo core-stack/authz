@@ -3,7 +3,6 @@ package oauth2
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -83,7 +82,7 @@ func (p *Provider) ExchangeCode(ctx context.Context, code string) (TokenResponse
 
 func (p *Provider) GetUserInfo(ctx context.Context, token string) (UserInfo, error) {
 	if p.UserInfoURL == "" {
-		return UserInfo{}, errors.New("provider does not support user info")
+		return UserInfo{}, ErrProviderNotSupportUserInfo
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.UserInfoURL, nil)

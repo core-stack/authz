@@ -1,8 +1,6 @@
 package oauth2
 
 import (
-	"errors"
-
 	"github.com/core-stack/authz/session"
 	"github.com/core-stack/authz/zrepository"
 )
@@ -37,5 +35,5 @@ func (s *OAuth2) getProvider(provider string) (Provider, error) {
 			return p, nil
 		}
 	}
-	return Provider{}, errors.New("provider not found")
+	return Provider{}, ErrProviderNotFound
 }
