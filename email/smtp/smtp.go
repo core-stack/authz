@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/smtp"
 	"strings"
-	"text/template"
 
+	"github.com/core-stack/authz/email"
 	"github.com/core-stack/authz/zmodel"
 )
 
@@ -22,11 +22,13 @@ type SMTPConfig struct {
 type SMTPSender struct {
 	cfg  SMTPConfig
 	auth smtp.Auth
+
+	templates email.TemplateRegistry
 }
 
-func New(cfg SMTPConfig) *SMTPSender {
+func New(cfg SMTPConfig, templates email.TemplateRegistry) *SMTPSender {
 	auth := smtp.PlainAuth("", cfg.Username, cfg.Password, cfg.Host)
-	return &SMTPSender{cfg: cfg, auth: auth}
+	return &SMTPSender{cfg: cfg, auth: auth, templates: templates}
 }
 
 func (s *SMTPSender) Send(ctx context.Context, to, subject, body string) error {
@@ -38,7 +40,7 @@ func (s *SMTPSender) Send(ctx context.Context, to, subject, body string) error {
 		"To":           to,
 		"Subject":      subject,
 		"MIME-Version": "1.0",
-		"Content-Type": "text/plain; charset=\"utf-8\"",
+		"Content-Type": "text/html; charset=\"utf-8\"",
 	}
 
 	var msg strings.Builder
@@ -50,16 +52,70 @@ func (s *SMTPSender) Send(ctx context.Context, to, subject, body string) error {
 }
 
 func (s *SMTPSender) SendActiveAccount(ctx context.Context, user zmodel.User, code string) error {
-	t, err := template.ParseFiles("")
-	if err != nil {
-		return err
-	}
-	buf := new(bytes.Buffer)
-	if err = t.Execute(buf, data); err != nil {
-		return err
+	return s.sendWithTemplateCode(ctx, email.TemplateActiveAccount, user, code)
+}
+
+func (s *SMTPSender) SendResetPassword(ctx context.Context, user zmodel.User, code string) error {
+	return s.sendWithTemplateCode(ctx, email.TemplateResetPassword, user, code)
+}
+
+func (s *SMTPSender) SendNotifyResetPassword(ctx context.Context, user zmodel.User) error {
+	return s.sendWithTemplate(ctx, email.TemplateActiveAccount, user)
+}
+
+func (s *SMTPSender) SendChangePassword(ctx context.Context, user zmodel.User) error {
+	return s.sendWithTemplate(ctx, email.TemplateResetPassword, user)
+}
+
+func (s *SMTPSender) SendDeleteAccount(ctx context.Context, user zmodel.User) error {
+	return s.sendWithTemplate(ctx, email.TemplateActiveAccount, user)
+}
+
+func (s *SMTPSender) sendWithTemplateCode(
+	ctx context.Context,
+	templateType email.TemplateType,
+	user zmodel.User,
+	code string,
+) error {
+	tpl, ok := s.templates[templateType]
+	if !ok {
+		return fmt.Errorf("template for %s not found", templateType)
 	}
 
-	// diretorio
-	// data
+	data := struct {
+		Code string
+		Name string
+	}{
+		Name: user.Name,
+		Code: code,
+	}
 
+	var body bytes.Buffer
+	if err := tpl.Template.Execute(&body, data); err != nil {
+		return err
+	}
+	return s.Send(ctx, user.Email, tpl.Subject, body.String())
+}
+
+func (s *SMTPSender) sendWithTemplate(
+	ctx context.Context,
+	templateType email.TemplateType,
+	user zmodel.User,
+) error {
+	tpl, ok := s.templates[templateType]
+	if !ok {
+		return fmt.Errorf("template for %s not found", templateType)
+	}
+
+	data := struct {
+		Name string
+	}{
+		Name: user.Name,
+	}
+
+	var body bytes.Buffer
+	if err := tpl.Template.Execute(&body, data); err != nil {
+		return err
+	}
+	return s.Send(ctx, user.Email, tpl.Subject, body.String())
 }

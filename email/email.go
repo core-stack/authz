@@ -12,7 +12,5 @@ type ISender interface {
 	SendResetPassword(ctx context.Context, user zmodel.User, code string) error
 	SendNotifyResetPassword(ctx context.Context, user zmodel.User) error
 	SendChangePassword(ctx context.Context, user zmodel.User) error
-	SendStartChangeEmail(ctx context.Context, user zmodel.User, code string) error
-	SendFinishChangeEmail(ctx context.Context, user zmodel.User) error
 	SendDeleteAccount(ctx context.Context, email string) error
 }
