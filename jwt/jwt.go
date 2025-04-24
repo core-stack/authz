@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -87,11 +86,11 @@ func (j *JWTService) ParseToken(_ context.Context, tokenStr string) (*TokenClaim
 		return j.secretKey, nil
 	})
 	if err != nil || !token.Valid {
-		return nil, errors.New("invalid token")
+		return nil, ErrInvalidToken
 	}
 	claims, ok := token.Claims.(*TokenClaims)
 	if !ok {
-		return nil, errors.New("invalid claims")
+		return nil, ErrInvalidClaims
 	}
 	return claims, nil
 }
@@ -101,16 +100,16 @@ func (j *JWTService) Refresh(ctx context.Context, refreshToken string, permissio
 		return j.secretKey, nil
 	})
 	if err != nil || !token.Valid {
-		return nil, errors.New("invalid refresh token")
+		return nil, ErrInvalidRefreshToken
 	}
 
 	claims, ok := token.Claims.(*jwt.RegisteredClaims)
 	if !ok {
-		return nil, errors.New("invalid claims")
+		return nil, ErrInvalidClaims
 	}
 
 	if claims.ExpiresAt == nil || claims.ExpiresAt.Time.Before(time.Now()) {
-		return nil, errors.New("refresh token expired")
+		return nil, ErrRefreshTokenExpired
 	}
 
 	userID := claims.Subject
