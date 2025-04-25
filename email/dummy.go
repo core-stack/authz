@@ -82,10 +82,10 @@ func (s *DummySender) SendFinishChangeEmail(ctx context.Context, user zmodel.Use
 	return nil
 }
 
-func (s *DummySender) SendDeleteAccount(ctx context.Context, email string) error {
+func (s *DummySender) SendDeleteAccount(ctx context.Context, user zmodel.User) error {
 	slog.Info("Sending email with dummy sender")
 	s.logger.Info("SendDeleteAccount",
-		"email", email,
+		"email", user.Email,
 	)
 	return nil
 }
